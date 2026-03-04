@@ -13,6 +13,10 @@ const sessionStore = useSessionStore();
 const route = useRoute();
 
 const shouldHideLoginButton = computed(() => {
+    // 在 session 加载中时，隐藏登录按钮避免闪现
+    if (sessionStore.sessionState === 'loading') {
+        return true;
+    }
     // If a custom login path is set, HIDE the button unless we are ON that path.
     // The path matching logic in Entrance.vue handles the view, but this handles the nav button.
     const rawPath = sessionStore.publicConfig?.customLoginPath;

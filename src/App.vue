@@ -45,39 +45,42 @@ const isPublicRoute = computed(() => route.meta.isPublic);
 const showModernNavBar = computed(() => isLoggedIn.value && layoutMode.value === 'modern');
 const showLegacyHeader = computed(() => !showModernNavBar.value && (isLoggedIn.value || isPublicRoute.value));
 
-const shouldCenterMain = computed(() => 
-  sessionState.value !== 'loggedIn' && 
-  sessionState.value !== 'loading' && 
+const shouldCenterMain = computed(() =>
+  sessionState.value !== 'loggedIn' &&
+  sessionState.value !== 'loading' &&
   !isPublicRoute.value
 );
 
-const showSavePrompt = computed(() => 
+const showSavePrompt = computed(() =>
   layoutMode.value === 'modern' && (isDirty.value || saveState.value === 'success')
 );
 
 // Determine which login component to show (Custom Path -> NotFound, else -> Login)
-const loginComponent = computed(() => 
-  sessionStore.publicConfig?.customLoginPath ? NotFound : Login
-);
+const loginComponent = computed(() => {
+  const rawPath = sessionStore.publicConfig?.customLoginPath;
+  const normalizedPath = (rawPath && typeof rawPath === 'string') ? rawPath.trim().replace(/^\/+/, '') : '';
+  // 只有当存在有效的自定义路径（非空且不等于默认 'login'）时才显示 NotFound
+  return (normalizedPath && normalizedPath !== 'login') ? NotFound : Login;
+});
 
 const isDefaultPassword = computed(() => {
   return sessionStore.subscriptionConfig?.isDefaultPassword === true;
 });
 
 const goToSettings = () => {
-    // Navigate to settings (if using router)
-    // For now, if no router link, we can just suggest it. 
-    // But we are in App.vue, we have access to router.
-    // Assuming UI flow allows it. 
-    // If layoutMode is 'modern' we have router. 
-    // If not, Dashboard has tabs.
-    // Let's just create a global event or rely on user navigation? 
-    // Better to provide a button.
-    if (layoutMode.value === 'modern') {
-        const { useRouter } = require('vue-router'); // dynamic import or use existing
-        // route is already imported
-        // router is not, need to use useRouter()
-    }
+  // Navigate to settings (if using router)
+  // For now, if no router link, we can just suggest it. 
+  // But we are in App.vue, we have access to router.
+  // Assuming UI flow allows it. 
+  // If layoutMode is 'modern' we have router. 
+  // If not, Dashboard has tabs.
+  // Let's just create a global event or rely on user navigation? 
+  // Better to provide a button.
+  if (layoutMode.value === 'modern') {
+    const { useRouter } = require('vue-router'); // dynamic import or use existing
+    // route is already imported
+    // router is not, need to use useRouter()
+  }
 };
 // Clean way: just show message and link text
 
@@ -94,91 +97,72 @@ watch(sessionState, async (newVal) => {
 }, { immediate: true });
 
 const handleSave = async () => {
-   await dataStore.saveData();
+  await dataStore.saveData();
 };
 const handleDiscard = async () => {
-   await dataStore.fetchData(true);
-   toastStore.showToast('已放弃所有未保存的更改');
+  await dataStore.fetchData(true);
+  toastStore.showToast('已放弃所有未保存的更改');
 };
 
 </script>
 
 <template>
-  <div 
-    :class="theme" 
-    class="min-h-screen flex flex-col text-gray-800 dark:text-gray-200 transition-colors duration-300 bg-gray-100 dark:bg-gray-950"
-  >
+  <div :class="theme"
+    class="min-h-screen flex flex-col text-gray-800 dark:text-gray-200 transition-colors duration-300 bg-gray-100 dark:bg-gray-950">
     <!-- Navigation -->
-    <NavBar 
-      v-if="showModernNavBar" 
-      :is-logged-in="true" 
-      @logout="logout" 
-    />
-    <Header 
-      v-else-if="showLegacyHeader" 
-      :is-logged-in="isLoggedIn" 
-      @logout="logout" 
-    />
+    <NavBar v-if="showModernNavBar" :is-logged-in="true" @logout="logout" />
+    <Header v-else-if="showLegacyHeader" :is-logged-in="isLoggedIn" @logout="logout" />
 
-    <main 
-      class="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
-      :class="{ 
-        'flex items-center justify-center': shouldCenterMain,
-        'ios-header-padding': showLegacyHeader 
-      }"
-    >
+    <main class="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" :class="{
+      'flex items-center justify-center': shouldCenterMain,
+      'ios-header-padding': showLegacyHeader
+    }">
       <div v-if="sessionState === 'loading'" class="flex justify-center p-8">Loading...</div>
-      
+
       <template v-else-if="isLoggedIn">
-           <!-- Security Banner -->
-           <div v-if="isDefaultPassword" class="bg-red-600 px-4 py-3 text-white">
-             <div class="mx-auto flex max-w-7xl items-center justify-between">
-               <div class="flex items-center gap-3">
-                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-                   <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
-                 </svg>
-                 <p class="text-sm font-medium">
-                   安全警告：检测到您正在使用默认密码 "admin"。为了您的系统安全，请立即前往设置修改密码。
-                 </p>
-               </div>
-             </div>
-           </div>
+        <!-- Security Banner -->
+        <div v-if="isDefaultPassword" class="bg-red-600 px-4 py-3 text-white">
+          <div class="mx-auto flex max-w-7xl items-center justify-between">
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
+                <path fill-rule="evenodd"
+                  d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+                  clip-rule="evenodd" />
+              </svg>
+              <p class="text-sm font-medium">
+                安全警告：检测到您正在使用默认密码 "admin"。为了您的系统安全，请立即前往设置修改密码。
+              </p>
+            </div>
+          </div>
+        </div>
 
-          <SavePrompt 
-            :is-dirty="showSavePrompt" 
-            :save-state="saveState" 
-            @save="handleSave" 
-            @discard="handleDiscard" 
-          />
+        <SavePrompt :is-dirty="showSavePrompt" :save-state="saveState" @save="handleSave" @discard="handleDiscard" />
 
-          <router-view v-if="layoutMode === 'modern'" v-slot="{ Component }">
-            <transition name="fade" mode="out-in">
-              <component :is="Component" />
-            </transition>
-          </router-view>
+        <router-view v-if="layoutMode === 'modern'" v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
 
-          <Dashboard v-else />
+        <Dashboard v-else />
       </template>
 
       <!-- PUBLIC ROUTE VIEW (Not logged in, but isPublic) -->
       <template v-else-if="isPublicRoute">
-         <router-view v-slot="{ Component }">
-            <transition name="fade" mode="out-in">
-              <component :is="Component" />
-            </transition>
-          </router-view>
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
       </template>
-      
+
       <!-- LOGIN VIEW (Not logged in, not public) -->
       <template v-else>
-         <component 
-            :is="loginComponent" 
-            :login="login" 
-         />
+        <component :is="loginComponent" :login="login" />
       </template>
 
     </main>
-    
+
     <Toast :show="toastState.id" :message="toastState.message" :type="toastState.type" />
     <PWAUpdatePrompt />
     <PWADevTools />
@@ -191,9 +175,11 @@ const handleDiscard = async () => {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
+
 .ios-content-offset {
-    padding-top: calc(var(--safe-top));
+  padding-top: calc(var(--safe-top));
 }
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
@@ -203,8 +189,17 @@ const handleDiscard = async () => {
 .fade-leave-to {
   opacity: 0;
 }
-.slide-fade-enter-active, .slide-fade-leave-active { transition: all 0.3s ease; }
-.slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(-10px); opacity: 0; }
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
 
 /* iOS Specific Padding for Fixed Header */
 @supports (-webkit-touch-callout: none) {
