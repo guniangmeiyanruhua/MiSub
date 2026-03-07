@@ -27,25 +27,30 @@ export function sanitizeConvertedSubscriptionContent(content) {
 }
 
 /**
- * 构建返回给客户端的响应头，避免透传与实际响应体不一致的压缩/长度头。
+ * 构建返回给客户端的响应头
  * @param {Headers} backendHeaders
  * @param {string} subName
+ * @param {string} targetFormat
  * @param {Object} cacheHeaders
  * @returns {Headers}
  */
-export function buildClientResponseHeaders(backendHeaders, subName, cacheHeaders = {}) {
-    const responseHeaders = new Headers(backendHeaders);
-
-    // Node.js fetch 可能已自动解压，但仍保留 content-encoding，
-    // 会导致客户端二次解压报错（如 Clash 的 Filter error, bad data）。
-    responseHeaders.delete('content-encoding');
-    responseHeaders.delete('content-length');
-    responseHeaders.delete('transfer-encoding');
+export function buildClientResponseHeaders(backendHeaders, subName, targetFormat = '', cacheHeaders = {}) {
+    // [修正] 不再拷贝后端所有头信息，避免透传 subscription-userinfo 等头导致
+    // FlClash 等客户端解析崩溃（Dart RangeError）。
+    const responseHeaders = new Headers();
 
     responseHeaders.set('Content-Disposition', `attachment; filename*=utf-8''${encodeURIComponent(subName)}`);
-    responseHeaders.set('Content-Type', 'text/plain; charset=utf-8');
+    
+    // 根据目标格式设置 Content-Type
+    if (targetFormat.includes('clash')) {
+        responseHeaders.set('Content-Type', 'text/yaml; charset=utf-8');
+    } else {
+        responseHeaders.set('Content-Type', 'text/plain; charset=utf-8');
+    }
+
     responseHeaders.set('Cache-Control', 'no-store, no-cache');
 
+    // 仅保留安全的、MiSub 自定义的缓存状态头
     Object.entries(cacheHeaders).forEach(([key, value]) => {
         responseHeaders.set(key, value);
     });
@@ -229,13 +234,16 @@ export async function fetchFromSubconverter(candidates, options) {
                         console.log(`[MiSub Sanitize] Removed ${replacedCount} unsafe control chars. Base64: ${isBase64}`);
                     }
                     
-                    responseText = isBase64 ? btoa(sanitizedText) : sanitizedText;
+                    // [修正] 只有目标格式明确要求是 base64 时才返回 base64。
+                    // 以前的逻辑是：如果后端返回了 base64，我们就再转回去。
+                    // 但对于 Clash 等客户端，即使后端由于某种原因返回了 base64，MiSub 也应该解码成明文发给客户端。
+                    responseText = (targetFormat === 'base64') ? btoa(sanitizedText) : sanitizedText;
 
                     if (responseText.trim().startsWith('<!DOCTYPE html>') || responseText.includes('<html')) {
                         throw new Error(`Backend returned HTML instead of subscription. Prefix: ${responseText.slice(0, 100)}`);
                     }
 
-                    const responseHeaders = buildClientResponseHeaders(response.headers, subName, cacheHeaders);
+                    const responseHeaders = buildClientResponseHeaders(response.headers, subName, targetFormat, cacheHeaders);
 
                     if (!isResolved) {
                         isResolved = true;
