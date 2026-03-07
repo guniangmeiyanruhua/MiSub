@@ -106,7 +106,7 @@ const handleQRCode = (profileId) => {
 
     <ProfileModal v-if="showProfileModal" v-model:show="showProfileModal" :profile="editingProfile"
       :is-new="isNewProfile" :all-subscriptions="subscriptions" :all-manual-nodes="manualNodes"
-      @save="handleSaveProfile" />
+      @save="handleSaveProfile" size="6xl" />
 
     <Modal v-model:show="showDeleteProfilesModal" @confirm="handleDeleteAllProfiles">
       <template #title>
