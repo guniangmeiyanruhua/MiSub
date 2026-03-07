@@ -291,7 +291,7 @@ function parseSurgeOrQxLine(line) {
     if (!line || line.startsWith('#') || line.startsWith(';')) return null;
 
     // Surge 格式: "name = protocol, server, port, key=value, ..."
-    let match = line.match(/^([^=]+)=(shadowsocks|ss|ssr|vmess|vless|trojan|hysteria2?|hy2|hysteria|tuic|snell|socks5|http|https),\s*([^,]+),\s*(\d+)(.*)$/i);
+    let match = line.match(/^([^=]+)=(shadowsocks|ss|ssr|vmess|vless|trojan|hysteria2?|hy2|hysteria|tuic|snell|anytls|socks5|http|https),\s*([^,]+),\s*(\d+)(.*)$/i);
     if (match) {
         const proxy = {
             name: match[1].trim(),
@@ -328,7 +328,7 @@ function parseSurgeOrQxLine(line) {
     }
 
     // QX 格式: "protocol=server:port, key=value, ..., tag=name"
-    match = line.match(/^(shadowsocks|ss|ssr|vmess|vless|trojan|hysteria2?|hy2|hysteria|tuic|snell|socks5|http|https)=([^,:]+):(\d+)(.*)$/i);
+    match = line.match(/^(shadowsocks|ss|ssr|vmess|vless|trojan|hysteria2?|hy2|hysteria|tuic|snell|anytls|socks5|http|https)=([^,:]+):(\d+)(.*)$/i);
     if (match) {
         const proxy = {
             name: 'Untitled',
