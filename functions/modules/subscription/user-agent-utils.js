@@ -45,6 +45,18 @@ export function determineTargetFormat(userAgent, searchParams) {
     // 2. Check User-Agent
     const ua = (userAgent || '').toLowerCase();
 
+    // --- Surge Specific Handling ---
+    // Extract version accurately (e.g., "Surge/4.0", "Surge Mac/3.0", "Surge-Mac/5.0")
+    if (ua.includes('surge')) {
+        const surgeMatch = ua.match(/surge(?:\s*-?\s*mac)?\/(\d+)/);
+        if (surgeMatch) {
+            const version = parseInt(surgeMatch[1], 10);
+            // Subconverter primarily supports &ver=2, 3, 4. For versions >= 4, use 4.
+            return `surge&ver=${version >= 4 ? 4 : Math.max(2, version)}`;
+        }
+        return 'surge&ver=4';
+    }
+
     // Mapping array to ensure priority order
     const uaMapping = [
         // Mihomo/Meta Core Clients -> Clash
@@ -61,7 +73,6 @@ export function determineTargetFormat(userAgent, searchParams) {
         ['shadowrocket', 'base64'],
         ['v2rayn', 'base64'],
         ['v2rayng', 'base64'],
-        ['surge', 'surge'],
         ['loon', 'loon'],
         ['quantumult%20x', 'quanx'],
         ['quantumult', 'quanx'],
