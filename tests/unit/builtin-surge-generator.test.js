@@ -24,6 +24,12 @@ describe('Surge 内置生成器', () => {
             });
             expect(result).toContain('#!MANAGED-CONFIG https://example.com/sub interval=3600 strict=false');
         });
+
+        it('应正确应用全局 skipCertVerify 设置', () => {
+            const trojan = 'trojan://password123@1.2.3.4:443#TestTrojan';
+            const result = generateBuiltinSurgeConfig(trojan, { skipCertVerify: true });
+            expect(result).toContain('skip-cert-verify=true');
+        });
     });
 
     describe('Shadowsocks (SS)', () => {

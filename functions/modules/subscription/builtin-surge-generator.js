@@ -363,7 +363,8 @@ export function generateBuiltinSurgeConfig(nodeList, options = {}) {
     const {
         fileName = 'MiSub',
         managedConfigUrl = '',
-        interval = 86400
+        interval = 86400,
+        skipCertVerify = false
     } = options;
 
     // 清理控制字符后解析节点 URL 列表
@@ -380,6 +381,10 @@ export function generateBuiltinSurgeConfig(nodeList, options = {}) {
     for (const url of nodeUrls) {
         const clashProxy = urlToClashProxy(url);
         if (!clashProxy) continue;
+
+        if (skipCertVerify) {
+            clashProxy['skip-cert-verify'] = true;
+        }
 
         const result = clashProxyToSurgeResult(clashProxy);
         if (result) {
